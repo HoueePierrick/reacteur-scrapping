@@ -9,6 +9,6 @@ const puppeteer = require("puppeteer");
   const games = await page.evaluate(() => {
     return Array.from(document.querySelectorAll("#jsRooms article"));
   });
-
+  console.log(games);
   await browser.close();
 })();
