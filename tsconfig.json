@@ -7,5 +7,6 @@
   },
   "include": ["index.ts"],
   "exclude": ["node_modules", "**/*.spec.ts"],
-  "moduleResolution": "node"
+  "moduleResolution": "node",
+  "module": "commonjs"
 }
