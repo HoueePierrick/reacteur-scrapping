@@ -101,13 +101,30 @@ const getMoreAboutGames = async () => {
     }
   };
 
+  // Summary
   const summary = await page.evaluate(() => {
     // return myFunction(document.querySelector(".content"));
     const node = document.querySelector(".content") as HTMLElement;
     return node.innerText;
   });
 
-  console.log({ summary });
+  // Availabilities
+  const availabilities = await page.evaluate(() => {
+    // return myFunction(document.querySelector(".content"));
+    const node = document.querySelector(".top15 > a") as HTMLElement;
+    return node && node.getAttribute("href");
+  });
+
+  // Room addresses
+  const roomAddresses = await page.evaluate(() => {
+    return [...document.querySelectorAll(".room-address")].map((element) => {
+      return {
+        link: element.getAttribute("href"),
+      };
+    });
+  });
+
+  console.log({ summary, availabilities, roomAddresses });
 
   await browser.close();
 };
