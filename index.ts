@@ -1,4 +1,21 @@
 const puppeteer = require("puppeteer");
+// Library to manage files
+const fs = require("fs");
+
+let rooms: any;
+
+const saveToFile = (data: any) => {
+  fs.writeFile(
+    "./data/rooms.json",
+    JSON.stringify(data),
+    "utf8",
+    (err: any) => {
+      if (err) {
+        console.log(err);
+      }
+    }
+  );
+};
 
 const getGames = async () => {
   const browser = await puppeteer.launch();
@@ -81,52 +98,92 @@ const getGames = async () => {
       }
     );
   });
+  // console.log(games)
   await browser.close();
-  return games;
+  // return games;
+  // saveToFile(games);
+  rooms = games;
+  getMoreAboutGames(0);
 };
 
-// getGames();
+getGames();
 
-const getMoreAboutGames = async () => {
-  const browser = await puppeteer.launch();
-  const page = await browser.newPage();
-  await page.goto(
-    "https://www.escapegame.fr/paris/quest-factory/cannibal-island/",
-    { waitUntil: "networkidle2" }
-  );
+const getMoreAboutGames = async (index: number) => {
+  if (index < rooms.length - 1) {
+    const browser = await puppeteer.launch();
+    const page = await browser.newPage();
+    await page.goto(rooms[index].domain, { waitUntil: "networkidle2" });
 
-  const myFunction = (node: HTMLElement | null) => {
-    if (node) {
-      return node.innerText; // Property 'innerText' does not exist on 'T'
-    }
-  };
+    const myFunction = (node: HTMLElement | null) => {
+      if (node) {
+        return node.innerText; // Property 'innerText' does not exist on 'T'
+      }
+    };
 
-  // Summary
-  const summary = await page.evaluate(() => {
-    // return myFunction(document.querySelector(".content"));
-    const node = document.querySelector(".content") as HTMLElement;
-    return node.innerText;
-  });
-
-  // Availabilities
-  const availabilities = await page.evaluate(() => {
-    // return myFunction(document.querySelector(".content"));
-    const node = document.querySelector(".top15 > a") as HTMLElement;
-    return node && node.getAttribute("href");
-  });
-
-  // Room addresses
-  const roomAddresses = await page.evaluate(() => {
-    return [...document.querySelectorAll(".room-address")].map((element) => {
-      return {
-        link: element.getAttribute("href"),
-      };
+    // Summary
+    const summary = await page.evaluate(() => {
+      // return myFunction(document.querySelector(".content"));
+      const node = document.querySelector(".content") as HTMLElement;
+      return node.innerText;
     });
-  });
 
-  console.log({ summary, availabilities, roomAddresses });
+    // Availabilities
+    const availabilities = await page.evaluate(() => {
+      // return myFunction(document.querySelector(".content"));
+      const node = document.querySelector(".top15 > a") as HTMLElement;
+      return node && node.getAttribute("href");
+    });
 
-  await browser.close();
+    // Room addresses
+    const roomAddresses = await page.evaluate(() => {
+      const array = [
+        ...document.querySelectorAll(".room-address"),
+      ] as HTMLElement[];
+      return array.map((element) => {
+        return {
+          link: element.getAttribute("href"),
+          location: element.innerText,
+          coords: {
+            lat: element.getAttribute("href")?.split("=")[1].split(",")[0],
+            lng: element.getAttribute("href")?.split("=")[1].split(",")[1],
+          },
+        };
+      });
+    });
+
+    // Booking
+    const booking = await page.evaluate(() => {
+      return (
+        document.querySelector("#jsBookingSection > a") &&
+        document
+          .querySelector("#jsBookingSection > a")
+          ?.getAttribute("href")
+          ?.split("?")[0]
+      );
+    });
+
+    // Specs
+    const specs = await page.evaluate(() => {
+      const array = [
+        ...document.querySelectorAll(".room-specs > div"),
+      ] as HTMLElement[];
+      return array.map((e) => {
+        const key = e.innerText.split("\n")[0];
+        const value = e.innerText.split("\n")[1];
+        // [key] est une clé dynamique
+        return { [key]: value };
+      });
+    });
+
+    // console.log({ summary, availabilities, roomAddresses, booking, specs });
+
+    await browser.close();
+    index++;
+    getMoreAboutGames(index);
+  } else {
+    // enregistrer les datas dans mon fichier
+    saveToFile(rooms);
+  }
 };
 
-getMoreAboutGames();
+// getMoreAboutGames();
