@@ -1,3 +1,6 @@
+// Utiliser des setInterval ou setTimeOut pour créer des latences
+// Mongoose insert many pour pousser JSON en BDD
+
 const puppeteer = require("puppeteer");
 // Library to manage files
 const fs = require("fs");
@@ -12,6 +15,8 @@ const saveToFile = (data: any) => {
     (err: any) => {
       if (err) {
         console.log(err);
+      } else {
+        console.log("scrapping terminé");
       }
     }
   );
@@ -100,6 +105,7 @@ const getGames = async () => {
   });
   // console.log(games)
   await browser.close();
+  console.log("getMoreAboutGames");
   // return games;
   // saveToFile(games);
   rooms = games;
@@ -110,7 +116,7 @@ getGames();
 
 const getMoreAboutGames = async (index: number) => {
   if (index < rooms.length - 1) {
-    const browser = await puppeteer.launch();
+    const browser = await puppeteer.launch({ headless: false });
     const page = await browser.newPage();
     await page.goto(rooms[index].domain, { waitUntil: "networkidle2" });
 
@@ -124,7 +130,7 @@ const getMoreAboutGames = async (index: number) => {
     const summary = await page.evaluate(() => {
       // return myFunction(document.querySelector(".content"));
       const node = document.querySelector(".content") as HTMLElement;
-      return node.innerText;
+      return node && node.innerText;
     });
 
     // Availabilities
@@ -141,8 +147,8 @@ const getMoreAboutGames = async (index: number) => {
       ] as HTMLElement[];
       return array.map((element) => {
         return {
-          link: element.getAttribute("href"),
-          location: element.innerText,
+          link: element && element.getAttribute("href"),
+          location: element && element.innerText,
           coords: {
             lat: element.getAttribute("href")?.split("=")[1].split(",")[0],
             lng: element.getAttribute("href")?.split("=")[1].split(",")[1],
@@ -178,7 +184,16 @@ const getMoreAboutGames = async (index: number) => {
     // console.log({ summary, availabilities, roomAddresses, booking, specs });
 
     await browser.close();
+    rooms[index] = {
+      ...rooms[index],
+      summary,
+      availabilities,
+      roomAddresses,
+      booking,
+      specs,
+    };
     index++;
+    console.log(`✅ L'escape game ${rooms[index].name} a bien été scrappé ✅`);
     getMoreAboutGames(index);
   } else {
     // enregistrer les datas dans mon fichier
